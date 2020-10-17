@@ -1,4 +1,6 @@
+import { platform } from 'os';
 import { Arg, Int, Mutation, Query, Resolver } from 'type-graphql';
+import { getRepository } from 'typeorm';
 import { Command } from '../entity/Command';
 
 @Resolver()
@@ -15,6 +17,17 @@ export class CommandResolver {
         return Command.findOne({
             where: {
                 id,
+            },
+        });
+    }
+
+    @Query(() => [Command], { nullable: true })
+    async CommandsByPlatform(
+        @Arg('platform', () => String) platform: string
+    ): Promise<Command[] | undefined> {
+        return Command.find({
+            where: {
+                platform: platform,
             },
         });
     }
@@ -41,16 +54,22 @@ export class CommandResolver {
         @Arg('line') line: string,
         @Arg('platform') platform: string
     ): Promise<Command | undefined> {
-        let newCommand = await Command.findOneOrFail({ id });
-        if (howTo !== undefined && howTo !== null) {
-            newCommand.howTo = howTo;
-        }
-        if (line !== undefined && line !== null) {
-            newCommand.line = line;
-        }
-        if (platform !== undefined && platform !== null) {
-            newCommand.platform = platform;
-        }
-        return await newCommand.save();
+        const CommandRepository = getRepository(Command);
+
+        let newCommand = await CommandRepository.update(id, {
+            howTo,
+            line,
+            platform,
+        });
+        console.log(newCommand);
+        return CommandRepository.findOne({ id });
+    }
+
+    @Mutation(() => Boolean)
+    async DeleteCommand(@Arg('id', () => Int) id: number): Promise<Boolean> {
+        const CommandRepository = getRepository(Command);
+
+        let result = await CommandRepository.delete({ id });
+        return result.affected != null && result.affected >= 0;
     }
 }
