@@ -1,23 +1,24 @@
-import { platform } from 'os';
+import { Command } from './../entity/Command';
 import { Arg, Int, Mutation, Query, Resolver } from 'type-graphql';
 import { getRepository } from 'typeorm';
-import { Command } from '../entity/Command';
 
 @Resolver()
 export class CommandResolver {
     @Query(() => [Command], { nullable: true })
     async Commands(): Promise<Command[] | undefined> {
-        return Command.find();
+        const CommandRepository = getRepository(Command);
+
+        return CommandRepository.find();
     }
 
     @Query(() => Command, { nullable: true })
     async CommandById(
         @Arg('id', () => Int) id: number
     ): Promise<Command | undefined> {
-        return Command.findOne({
-            where: {
-                id,
-            },
+        const CommandRepository = getRepository(Command);
+
+        return CommandRepository.findOne({
+            id,
         });
     }
 
@@ -25,10 +26,10 @@ export class CommandResolver {
     async CommandsByPlatform(
         @Arg('platform', () => String) platform: string
     ): Promise<Command[] | undefined> {
-        return Command.find({
-            where: {
-                platform: platform,
-            },
+        const CommandRepository = getRepository(Command);
+
+        return CommandRepository.find({
+            platform: platform,
         });
     }
 
@@ -38,11 +39,13 @@ export class CommandResolver {
         @Arg('line') line: string,
         @Arg('platform') platform: string
     ): Promise<Command | undefined> {
-        const command = Command.create({
+        const CommandRepository = getRepository(Command);
+
+        const command = await CommandRepository.save({
             howTo,
             line,
             platform,
-        }).save();
+        });
 
         return command;
     }
